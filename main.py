@@ -90,10 +90,10 @@ class KeywordQueryEventListener(EventListener):
                         description = "\n".join(description_lines)
                         
                         # Build title with icon and synonyms
-                        title = f"{pos_icon} {word.title()}"
+                        title = f"{pos_icon} <b>{word.title()}</b>"
                         if phonetic:
                             title += f" /{phonetic}/"
-                        title += f" · {part_of_speech}"
+                        title += f" · {part_of_speech}\n"
                         
                         # Add top synonyms to title if available
                         top_synonyms = list(set(all_synonyms))[:3]
@@ -103,7 +103,7 @@ class KeywordQueryEventListener(EventListener):
                         items.append(ExtensionResultItem(
                             icon='images/icon.png',
                             name=title,
-                            description=description,
+                            description=description + "\n",
                             on_enter=CopyToClipboardAction(description)
                         ))
             else:
