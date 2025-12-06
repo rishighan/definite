@@ -24,7 +24,7 @@ Restart Ulauncher.
 
 - Ulauncher
 - Python 3
-- `requests` library
+- `requests` library (this is a MUST!)
 
 ## API
 
