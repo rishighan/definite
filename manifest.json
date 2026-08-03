@@ -1,19 +1,15 @@
 {
-  "required_api_version": "2",
+  "api_version": "3",
   "name": "Definite",
   "description": "A dictionary extension for Ulauncher.",
-  "developer_name": "Rishi Ghan",
+  "authors": "Rishi Ghan",
   "icon": "images/icon.png",
-  "options": {
-    "query_debounce": 0.4
-  },
-  "preferences": [
-    {
-      "id": "definite_kw",
-      "type": "keyword",
+  "input_debounce": 0.4,
+  "triggers": {
+    "definite_kw": {
       "name": "Dictionary",
       "description": "Look up word definitions",
-      "default_value": "def"
+      "default_keyword": "def"
     }
-  ]
+  }
 }
