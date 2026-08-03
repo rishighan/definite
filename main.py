@@ -80,7 +80,7 @@ class DefiniteExtension(Extension):
                         description = "\n".join(description_lines)
 
                         # Build title with icon and synonyms
-                        title = f"{pos_icon} <b>{word.title()}</b>"
+                        title = f"{pos_icon} {word.title()}"
                         if phonetic:
                             title += f" /{phonetic}/"
                         title += f" · {part_of_speech}\n"
