@@ -3,15 +3,19 @@ import requests
 
 # Icon mapping for parts of speech
 PART_OF_SPEECH_ICONS = {
-    'noun': '▪',
-    'verb': '▸',
-    'adjective': '◆',
-    'adverb': '◇',
-    'pronoun': '●',
-    'preposition': '○',
-    'conjunction': '◐',
-    'interjection': '◉',
-    'exclamation': '◎'
+    'n': '▪',
+    'v': '▸',
+    'adj': '◆',
+    'adv': '◇',
+    'u': '■'
+}
+
+PART_OF_SPEECH_NAMES = {
+    'n': 'noun',
+    'v': 'verb',
+    'adj': 'adjective',
+    'adv': 'adverb',
+    'u': 'other'
 }
 
 
@@ -38,57 +42,46 @@ class DefiniteExtension(Extension):
         items = []
 
         try:
-            url = f"https://api.dictionaryapi.dev/api/v2/entries/en/{word}"
-            response = requests.get(url, timeout=5)
+            url = "https://api.datamuse.com/words"
+            response = requests.get(
+                url, params={"sp": word, "md": "d", "max": 1}, timeout=5
+            )
 
             if response.status_code == 200:
                 data = response.json()
 
-                if data and len(data) > 0:
+                if data and data[0].get('defs'):
                     entry = data[0]
-                    phonetic = entry.get('phonetic', '')
 
-                    # Get synonyms if available
-                    all_synonyms = []
-                    for meaning in entry.get('meanings', []):
-                        for defn in meaning.get('definitions', []):
-                            all_synonyms.extend(defn.get('synonyms', []))
+                    # Group definitions by part of speech, preserving order
+                    by_pos = {}
+                    for raw in entry['defs']:
+                        pos, _, definition_text = raw.partition('\t')
+                        by_pos.setdefault(pos, []).append(definition_text.strip())
 
-                    # Process each part of speech
-                    for meaning in entry.get('meanings', [])[:3]:
-                        part_of_speech = meaning.get('partOfSpeech', '')
-                        pos_icon = get_pos_icon(part_of_speech)
-                        definitions = meaning.get('definitions', [])
+                    # Fetch a few synonyms for the title
+                    synonyms = []
+                    try:
+                        syn_resp = requests.get(
+                            url, params={"rel_syn": word, "max": 3}, timeout=5
+                        )
+                        if syn_resp.status_code == 200:
+                            synonyms = [s['word'] for s in syn_resp.json()]
+                    except requests.exceptions.RequestException:
+                        pass
 
-                        # Build description with multiple lines
-                        description_lines = []
+                    for pos, definitions in list(by_pos.items())[:3]:
+                        pos_icon = get_pos_icon(pos)
+                        part_of_speech = PART_OF_SPEECH_NAMES.get(pos.lower(), pos)
 
-                        for defn in definitions[:5]:
-                            definition_text = defn.get('definition', '')
-                            example = defn.get('example', '')
-                            synonyms = defn.get('synonyms', [])[:3]
-
-                            line = f"• {definition_text}"
-                            if example:
-                                line += f"\n  → \"{example}\""
-                            if synonyms:
-                                line += f"\n  ~ {', '.join(synonyms)}"
-
-                            description_lines.append(line)
-
-                        # Single blank line between definitions
+                        description_lines = [
+                            f"• {definition_text}" for definition_text in definitions[:5]
+                        ]
                         description = "\n".join(description_lines)
 
-                        # Build title with icon and synonyms
-                        title = f"{pos_icon} {word.title()}"
-                        if phonetic:
-                            title += f" /{phonetic}/"
-                        title += f" · {part_of_speech}\n"
-
-                        # Add top synonyms to title if available
-                        top_synonyms = list(set(all_synonyms))[:3]
-                        if top_synonyms:
-                            title += f" → {', '.join(top_synonyms)}"
+                        title = f"{pos_icon} {word.title()} · {part_of_speech}\n"
+                        if synonyms:
+                            title += f" → {', '.join(synonyms)}"
 
                         items.append(Result(
                             icon='images/icon.png',
@@ -96,6 +89,13 @@ class DefiniteExtension(Extension):
                             description=description + "\n",
                             actions={"copy": {"name": "Copy definition"}}
                         ))
+                else:
+                    items.append(Result(
+                        icon='images/icon.png',
+                        name=f'No definition found for "{word}"',
+                        description='Try checking the spelling or use a different word',
+                        actions={"dismiss": {"name": "Close"}}
+                    ))
             else:
                 items.append(Result(
                     icon='images/icon.png',
